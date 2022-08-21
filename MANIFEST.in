@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include parason_customization *.css
+recursive-include parason_customization *.csv
+recursive-include parason_customization *.html
+recursive-include parason_customization *.ico
+recursive-include parason_customization *.js
+recursive-include parason_customization *.json
+recursive-include parason_customization *.md
+recursive-include parason_customization *.png
+recursive-include parason_customization *.py
+recursive-include parason_customization *.svg
+recursive-include parason_customization *.txt
+recursive-exclude parason_customization *.pyc
