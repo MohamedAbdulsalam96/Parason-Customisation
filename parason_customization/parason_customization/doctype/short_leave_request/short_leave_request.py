@@ -25,3 +25,11 @@ class ShortLeaveRequest(Document):
 		for doc in docs:
 			if doc.name != self.name:
 				frappe.throw("You're already consumed the request for this month")
+		attendance = None
+		attendance = frappe.db.get_values("Attendance", {"employee": self.employee, "attendance_date": frappe.utils.getdate(self.from_time)}, ["status", "in_time", "out_time"])
+
+		if attendance:
+
+			self.attendance = attendance[0].status
+			self.logs = []
+
