@@ -24,19 +24,16 @@ def add_attendance(shifts=None, sync_date= None):
 		employees = get_employee(shift, sync_date)
 		for employee in employees:
 			employee = employee.employee
-			#duplicate = check_duplication(str(sync_date‌), employee)
 			duplicate = check_duplication(str(sync_date), employee)
 			if duplicate:
-				return
+				continue
 			company = frappe.db.get_value("Employee", employee, "company")
 			holiday_list = get_holiday_list(employee, shift, company)
 			checkin_details = get_checkin_details(employee, margin_start_date, margin_end_date)
 			if len(checkin_details) in [0, 1]:
 				leave = frappe.db.get_value("Leave Application", {"employee":employee, "from_date":[">=", str(sync_date)],
 					"to_date":["<=", str(sync_date)], "docstatus": 1})
-				frappe.errprint(holiday_list)
 				is_holiday = frappe.get_value("Holiday", {"holiday_date": str(sync_date.date()), "parent":holiday_list})
-				frappe.errprint(is_holiday)
 				doc = frappe.new_doc("Attendance")
 				doc.employee = employee
 				doc.shift = shift
@@ -46,9 +43,8 @@ def add_attendance(shifts=None, sync_date= None):
 				doc.status = "On Leave"
 				if is_holiday:
 					week_off = frappe.get_value("Holiday", is_holiday, "weekly_off")
-					frappe.errprint(week_off)
 					if week_off:
-						doc.status = "On Leave" #"Week Off"
+						doc.status = None #"On Leave" #"Week Off"
 				elif leave:
 					doc.status = "On Leave"
 					doc.leave_application = leave
@@ -59,7 +55,7 @@ def add_attendance(shifts=None, sync_date= None):
 						doc.leave_type = ""
 						week_off = frappe.get_value("Holiday", is_holiday, "weekly_off")
 						if week_off:
-							doc.status = "On Leave" #"Week Off"
+							doc.status = None #"On Leave" #"Week Off"
 				else:
 					doc.status = "Absent"
 				doc.save(ignore_permissions = True)
@@ -84,6 +80,7 @@ def add_attendance(shifts=None, sync_date= None):
 				if frappe.db.get_value("Employee", employee, "allow_over_time"):
 					ot = checkout - shift_end
 					if ot.seconds > 0 and ot.seconds / 60 > 30:
+						doc.out_time = shift_end
 						ot_doc = frappe.new_doc("Overtime Request")
 						ot_doc.employee = employee
 						ot_doc.company = company

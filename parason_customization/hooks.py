@@ -96,7 +96,8 @@ app_license = "MIT"
 
 override_doctype_class = {
 #	"ToDo": "custom_app.overrides.CustomToDo"
-	"Leave Control Panel": "parason_customization.custom_py.leave_control_panel.CustomLeaveControlPanel"
+	"Leave Control Panel": "parason_customization.custom_py.leave_control_panel.CustomLeaveControlPanel",
+	"Salary Slip": "parason_customization.custom_py.salary_slip.CustomSalarySlip"
 }
 
 # Document Events
