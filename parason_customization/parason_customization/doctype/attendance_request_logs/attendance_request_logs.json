@@ -1,0 +1,48 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2022-08-23 08:00:04.938221",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "punch_time",
+  "check_in",
+  "check_out"
+ ],
+ "fields": [
+  {
+   "fieldname": "punch_time",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Punch Time"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_in",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Check In"
+  },
+  {
+   "default": "0",
+   "fieldname": "check_out",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Check Out"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-08-23 08:00:04.938221",
+ "modified_by": "Administrator",
+ "module": "Parason Customization",
+ "name": "Attendance Request Logs",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

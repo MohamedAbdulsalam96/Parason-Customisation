@@ -94,21 +94,26 @@ app_license = "MIT"
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
+override_doctype_class = {
 #	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+	"Leave Control Panel": "parason_customization.custom_py.leave_control_panel.CustomLeaveControlPanel"
+}
 
 # Document Events
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
+doc_events = {
 #	"*": {
 #		"on_update": "method",
 #		"on_cancel": "method",
 #		"on_trash": "method"
 #	}
-# }
+	"Salary Strucutre Assignment": {
+		"before_submit": "parason_customization.custom_py.salary_structure_assignment.before_submit",
+		"on_cancel": "parason_customization.custom_py.salary_structure_assignment.on_cancel"
+	}
+}
 
 # Scheduled Tasks
 # ---------------

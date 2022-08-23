@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "autoname": "autoincrement",
+ "creation": "2022-08-22 23:48:40.223745",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "document_name",
+  "file"
+ ],
+ "fields": [
+  {
+   "fieldname": "document_name",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Document Name",
+   "options": "\nAadhar\nPAN\nLicense\nPassport\nVoter ID\nClass 10\nClass 12\nDiploma\nUG\nPG\nDr\nRelieving letter\nConduct letter"
+  },
+  {
+   "fieldname": "file",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "File"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-08-22 23:48:40.223745",
+ "modified_by": "Administrator",
+ "module": "Parason Customization",
+ "name": "Employee Attachment",
+ "naming_rule": "Autoincrement",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
