@@ -2,8 +2,6 @@ import frappe
 from datetime import datetime, timedelta, date
 
 
-
-
 def add_attendance(shifts=None):
 	cur_time = datetime.now()
 	cur_shift_time = (cur_time + timedelta(hours=1)).time()
@@ -19,8 +17,6 @@ def add_attendance(shifts=None):
 		employees = get_employee(shift.name, sync_date)
 		for employee in employees:
 			add_attendance(employee, sync_date, shift)
-
-
 
 def add_attendance(employee, sync_date, shift):
 	shift_start, shift_end = frappe.db.get_value("Shift Type", shift, ["start_time", "end_time"])
