@@ -92,10 +92,8 @@ def add_attendance(employee, sync_date, shift):
 				ot_doc.save(ignore_permissions=True)
 				ot_doc.submit()
 	doc.save(ignore_permissions=True)
-	if duplicate:
+	if not duplicate:
 		doc.submit()
-
-
 def check_duplication(attendance_date, empployee):
 	return frappe.db.exists("Attendance", {'attendance_date':attendance_date, 'employee':employee, "docstatus":1})
 
