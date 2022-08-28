@@ -2,19 +2,25 @@ import frappe
 from datetime import datetime, timedelta, date
 
 
-def add_attendance(shifts=None):
+def add_attendance(shifts=None, sync_date= None):
+
 	cur_time = datetime.now()
 	cur_shift_time = (cur_time + timedelta(hours=1)).time()
-	sync_date = (cur_time - timedelta(days=1)).date()
+	if not sync_date:
+		sync_date = (cur_time - timedelta(days=1)).date()
 	if not shifts:
 		shifts = get_shifts(cur_time, cur_shift_time)
 	margin_start_date = cur_time - timedelta(days=1)
 	margin_end_date = cur_time
 	for shift in shifts:
-		shift_start, shift_end = frappe.db.get_value("Shift Type", shift, ["start_time", "end_time"])
-		shift_start = datetime.strptime(str(shift_start), "%Y-%m-%d")
-		shift_end = datetime.strptime(str(shift_end), "%Y-%m-%d")
-		employees = get_employee(shift.name, sync_date)
+		shift = shift.name
+		shift_start = frappe.db.get_value("Shift Type", shift, "start_time")
+		shift_end = frappe.db.get_value("Shift Type", shift, "end_time")
+		shift_start = datetime.strptime(str(sync_date.date())+" "+str(shift_start), "%Y-%m-%d %H:%M:%S")
+		shift_end = datetime.strptime(str(sync_date.date())+" "+str(shift_end), "%Y-%m-%d %H:%M:%S")
+		margin_start_date = shift_start - timedelta(hours=1)
+		margin_end_date = shift_end + timedelta(hours=7)
+		employees = get_employee(shift, sync_date)
 		for employee in employees:
 			add_attendance(employee, sync_date, shift)
 
@@ -95,9 +101,10 @@ def add_attendance(employee, sync_date, shift):
 def check_duplication(attendance_date, empployee):
 	return frappe.db.exists("Attendance", {'attendance_date':attendance_date, 'employee':employee, "docstatus":1})
 
-def get_checkin_details(employee, start, end):
-	return frappe.db.get_all("Employee Checkin", {"employee": employee, "time":["<=", str(end)], "time":[">=", str(start)]}, "time", order_by="time")
 
+def get_checkin_details(employee, start, end):
+	checkin = frappe.db.sql(""" select time from `tabEmployee Checkin` where employee='{0}' and time>='{1}' and time<='{2}' order by time """.format(employee, start, end))
+	return [i[0] for i in checkin]
 def get_holiday_list(employee, shift, company):
 	holiday = frappe.db.get_value("Shift Type", shift, "holiday_list")
 	if not holiday:
@@ -109,7 +116,7 @@ def get_holiday_list(employee, shift, company):
 	return holiday
 
 def get_employee(shift, sync_date):
-	return frappe.db.get_all("Shift Assignment", {"shift_type":shift, "start_date":["<=", str(date)], "end_date":[">=", str(date)], "docstatus":1}, "employee")
+	return frappe.db.get_all("Shift Assignment", {"shift_type":shift, "start_date":["<=", str(sync_date)], "end_date":[">=", str(sync_date)], "docstatus":1}, "employee")
 
 def get_shifts(from_time, to_time):
 	return frappe.db.get_all("Shift Type", {"start_time": [">=", str(from_date)], "start_time": ["<=", str(to_date)]})

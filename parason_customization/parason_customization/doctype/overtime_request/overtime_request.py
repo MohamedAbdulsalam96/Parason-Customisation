@@ -15,7 +15,7 @@ class OvertimeRequest(Document):
 			frappe.throw("To Date cannot be less than From Date")
 		if self.to_time == self.from_time:
 			frappe.throw("From and To time cannot be same")
-		to_time = datetime.strptime(self.to_time.split('.')[0], "%H:%M:%S")
-		from_time = datetime.strptime(self.from_time.split('.')[0], "%H:%M:%S")
+		to_time = self.to_time
+		from_time = self.from_time
 		self.duration = (to_time - from_time).seconds
 
