@@ -1,5 +1,5 @@
 import frappe
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 
 
 def add_attendance(shifts=None, sync_date= None):
@@ -16,42 +16,75 @@ def add_attendance(shifts=None, sync_date= None):
 		shift = shift.name
 		shift_start = frappe.db.get_value("Shift Type", shift, "start_time")
 		shift_end = frappe.db.get_value("Shift Type", shift, "end_time")
-		shift_start = datetime.strptime(str(sync_date.date())+" "+str(shift_start), "%Y-%m-%d %H:%M:%S")
-		shift_end = datetime.strptime(str(sync_date.date())+" "+str(shift_end), "%Y-%m-%d %H:%M:%S")
+		shift_start = datetime.strptime(str(sync_date)+" "+str(shift_start), "%Y-%m-%d %H:%M:%S")
+		shift_end = datetime.strptime(str(sync_date)+" "+str(shift_end), "%Y-%m-%d %H:%M:%S")
 		margin_start_date = shift_start - timedelta(hours=1)
 		margin_end_date = shift_end + timedelta(hours=7)
 		employees = get_employee(shift, sync_date)
 		for employee in employees:
-			add_attendance(employee, sync_date, shift)
+			create_attendance(employee.employee, sync_date, shift)
+	#frappe.msgprint("Attendance is created")
 
-def add_attendance(employee, sync_date, shift):
+def create_attendance(employee, sync_date, shift=None):
+	if not shift:
+		shift = get_cur_shift(employee, sync_date)
+
 	shift_start, shift_end = frappe.db.get_value("Shift Type", shift, ["start_time", "end_time"])
-	shift_start = datetime.strptime(str(shift_start), "%Y-%m-%d")
-	shift_end = datetime.strptime(str(shift_end), "%Y-%m-%d")
+	shift_begin = datetime.strptime(str(shift_start), "%H:%M:%S")
+	shift_term = datetime.strptime(str(shift_end), "%H:%M:%S")
+	shift_duration = (shift_term - shift_begin).seconds
+	frappe.errprint(sync_date)
+	frappe.errprint(shift_begin.time)
+	shift_start = datetime.strptime(str(sync_date)+" "+str(shift_begin.time()), "%Y-%m-%d %H:%M:%S")
+	shift_end = shift_start + timedelta(seconds=shift_duration)
+
 	margin_start_date = shift_start - timedelta(hours=1)
 	margin_end_date = shift_end + timedelta(hours=7)
-	duplicate = check_duplication(str(sync_date‌), employee)
+
+	half_day_limit = frappe.db.get_value("Attendance Settings", "Attendance Settings", "half_day_limit")
+	full_day_limit = frappe.db.get_value("Attendance Settings", "Attendance Settings", "full_day_limit")
+	late_entry_limit = frappe.db.get_value("Attendance Settings", "Attendance Settings", "late_entry_buffer_time")
+	overtime_limit = frappe.db.get_value("Attendance Settings", "Attendance Settings", "overtime_limit")
+
+	if not half_day_limit:
+		frappe.throw("Set Half day Limit in {0}".format(frappe.utils.get_link_to_form("Attendance Settings")))
+
+	if not full_day_limit:
+                frappe.throw("Set Full day Limit in {0}".format(frappe.utils.get_link_to_form("Attendance Settings") ))
+
+	if not late_entry_limit:
+                frappe.throw("Set Late Entry Limit in {0}".format(frappe.utils.get_link_to_form("Attendance Settings") ))
+
+	if not overtime_limit:
+                frappe.throw("Set Overtime Limit in {0}".format(frappe.utils.get_link_to_form("Attendance Settings") ))
+
+	half_day_limit = int(half_day_limit) / 60 / 60
+	full_day_limit = int(full_day_limit) / 60 / 60
+	late_entry_limit = int(late_entry_limit) / 60
+	overtime_limit = int(overtime_limit) / 60
+
+	duplicate = check_duplication(str(sync_date), employee)
 	if duplicate:
 		doc = frappe.get_doc("Attendance", duplicate)
 	else:
 		doc = frappe.new_doc("Attendance")
 	company = frappe.db.get_value("Employee", employee, "company")
-	holiday_list = get_holiday_list(employee, shift)
+	holiday_list = get_holiday_list(employee, shift, company)
 	checkin = get_checkin_details(employee, margin_start_date, margin_end_date)
 	if len(checkin) in [0, 1]:
-		leave = frappe.db.get_value("Leave Application", {"employee":self.employee, "from_date":[">=", str(sync_date)],
+		leave = frappe.db.get_value("Leave Application", {"employee":employee, "from_date":[">=", str(sync_date)],
 			"to_date":["<=", str(sync_date)], "docstatus": 1})
 		is_holiday = frappe.get_value("Holiday", {"holiday_date": str(sync_date), "parent":holiday_list})
 		doc.employee = employee
 		doc.shift = shift
-		doc.check_in_time = "00:00:00"
+		doc.check_in_time = checkin[0] if len(checkin) else "00:00:00"
 		doc.check_out_time = "00:00:00"
 		doc.attendance_date = sync_date
 		doc.status = "On Leave"
 		if is_holiday:
 			week_off = frappe.get_value("Holiday", is_holiday, "weekly_off")
 			if week_off:
-				doc.status = "Week Off"
+				doc.status = "On Leave" #"Week Off"
 		elif leave:
 			doc.status = "On Leave"
 			doc.leave_application = leave
@@ -62,12 +95,38 @@ def add_attendance(employee, sync_date, shift):
 				doc.leave_type = ""
 				week_off = frappe.get_value("Holiday", is_holiday, "weekly_off")
 				if week_off:
-					doc.status = "Week Off"
+					doc.status = "On Leave" #"Week Off"
 		else:
 			doc.status = "Absent"
 	else:
-		checkin = datetime.strptime(checkin[0].split(".")[0], "%Y-%m-%d %H:%M:%S")
-		checkout = datetime.strptime(checkin[-1].split(".")[0], "%Y-%m-%d %H:%M:%S")
+		check_in = checkin
+		checkin = check_in[0] #datetime.strptime(checkin[0].split(".")[0], "%Y-%m-%d %H:%M:%S")
+		checkout = check_in[-1] #datetime.strptime(checkin[-1].split(".")[0], "%Y-%m-%d %H:%M:%S")
+
+		short_leave_req = frappe.db.get_value("Short Leave Request", {"from_time": [">=", str(sync_date)], "to_time":["<=", str(sync_date+timedelta(days=1))]})
+		if short_leave_req:
+			short_leave = frappe.get_doc("Short Leave Request", short_leave_req)
+			begin_interval = short_leave.from_time - shift_start
+			end_interval = shift_end - short_leave.to_time
+			if begin_interval < end_interval and checkin > short_leave.from_time:
+				checkin = short_leave.from_time
+			elif begin_interval > end_interval and checkout < short_leave.to_time:
+				checkout = short_leave.to_time
+
+		#in_time = datetime.combine(date.min, checkin.time()) - datetime.min
+		#shift_in_time = datetime.combine(date.min, shift_start.time()) - datetime.min
+		#in_time_delay = (in_time - shift_in_time).seconds / 60
+		in_time_delay = 0
+		if shift_start < checkin:
+			in_time_delay = (checkin - shift_start).seconds / 60
+
+		#out_time = datetime.combine(date.min, checkout.time()) - datetime.min
+		#shift_out_time = datetime.combine(date.min, shift_end.time()) - datetime.min
+		#over_time = (out_time - shift_out_time).seconds / 60
+		over_time = 0
+		if shift_end < checkout:
+			over_time = (checkout - shift_end).seconds / 60
+
 		doc.employee = employee
 		doc.shift = shift
 		doc.check_in_time = checkin
@@ -77,28 +136,42 @@ def add_attendance(employee, sync_date, shift):
 		duration = duration.seconds / 60 / 60
 		doc.status = "Present"
 		is_half_day = False
-		if duration < 8 and duration >= 4:
+		if in_time_delay > late_entry_limit:
 			is_half_day = True
-		if duration < 4:
+			doc.late_entry = 1
+		if duration < half_day_limit and duration >= half_day_limit:
+			is_half_day = True
+		if duration < half_day_limit:
 			doc.status = "Absent"
-		if frappe.db.get_value("Employee", employee, "allow_over_time")
-			ot = checkout - shift_end
-			if ot.seconds > 0 and ot.seconds / 60 > 30:
-				ot_doc = frappe.new_doc("Overtime Request")
-				ot_doc.employee = employee
-				ot_doc.company = company
-				ot_doc.posting_date = sync_date
-				ot_doc.overtime_date = sync_date
-				ot_doc.from_time = shift_end
-				ot_doc.to_time = checkout
-				ot_doc.save(ignore_permissions=True)
-				ot_doc.submit()
+		if is_half_day:
+			leave_doc = frappe.new_doc("Leave Application")
+			leave_doc.employee = employee
+			leave_doc.from_date = sync_date
+			leave_doc.to_date = sync_date
+			leave_doc.half_day = 1
+			leave_approver = frappe.db.get_value("Employee", employee, "leave_approver")
+			if not leave_approver:
+				frappe.throw("Set Leave Approver for Employee:{0}".format(employee))
+			leave_doc.leave_approver = leave_approver
+			leave_doc.company = company
+			leave_doc.save(ignore_permissions=True)
+			leave_doc.submit()
+		if frappe.db.get_value("Employee", employee, "allow_over_time") and over_time > 0 and over_time > overtime_limit:
+			ot_doc = frappe.new_doc("Overtime Request")
+			ot_doc.employee = employee
+			ot_doc.company = company
+			ot_doc.posting_date = sync_date
+			ot_doc.overtime_date = sync_date
+			ot_doc.from_time = shift_end
+			ot_doc.to_time = checkout
+			ot_doc.save(ignore_permissions=True)
+			ot_doc.submit()
 	doc.save(ignore_permissions=True)
-	if duplicate:
+	if not duplicate:
 		doc.submit()
 
 
-def check_duplication(attendance_date, empployee):
+def check_duplication(attendance_date, employee):
 	return frappe.db.exists("Attendance", {'attendance_date':attendance_date, 'employee':employee, "docstatus":1})
 
 
@@ -120,3 +193,9 @@ def get_employee(shift, sync_date):
 
 def get_shifts(from_time, to_time):
 	return frappe.db.get_all("Shift Type", {"start_time": [">=", str(from_date)], "start_time": ["<=", str(to_date)]})
+
+def get_cur_shift(employee, shift_date):
+	shift = frappe.db.get_value("Shift Assignment", {"start_date": ["<=", shift_date], "end_date": [">=", shift_date], "docstatus":1, "status":"Active"}, "shift_type")
+	if not shift:
+		shift = frappe.db.get_value("Shift Assignment", {"start_date": [">=", shift_date], "docstatus":1, "status":"Active"}, "shift_type")
+	return shift

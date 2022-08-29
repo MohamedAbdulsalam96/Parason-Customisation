@@ -110,9 +110,12 @@ doc_events = {
 #		"on_cancel": "method",
 #		"on_trash": "method"
 #	}
-	"Salary Strucutre Assignment": {
+	"Salary Structure Assignment": {
 		"before_submit": "parason_customization.custom_py.salary_structure_assignment.before_submit",
 		"on_cancel": "parason_customization.custom_py.salary_structure_assignment.on_cancel"
+	},
+	"Shift Assignment": {
+		"on_submit": "parason_customization.custom_py.shift_assignment.on_submit"
 	}
 }
 

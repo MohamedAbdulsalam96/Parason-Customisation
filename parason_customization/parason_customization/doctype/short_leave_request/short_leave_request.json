@@ -14,14 +14,16 @@
   "from_time",
   "to_time",
   "section_break_7",
-  "logs"
+  "logs",
+  "amended_from"
  ],
  "fields": [
   {
    "fieldname": "employee",
    "fieldtype": "Link",
    "label": "Employee",
-   "options": "Employee"
+   "options": "Employee",
+   "reqd": 1
   },
   {
    "fetch_from": "employee.employee_name",
@@ -47,12 +49,14 @@
   {
    "fieldname": "from_time",
    "fieldtype": "Datetime",
-   "label": "From"
+   "label": "From",
+   "reqd": 1
   },
   {
    "fieldname": "to_time",
    "fieldtype": "Datetime",
-   "label": "To"
+   "label": "To",
+   "reqd": 1
   },
   {
    "fieldname": "section_break_7",
@@ -64,11 +68,21 @@
    "label": "Logs",
    "options": "Attendance Request Logs",
    "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Short Leave Request",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2022-08-23 13:22:21.963368",
+ "modified": "2022-08-29 12:19:56.598171",
  "modified_by": "Administrator",
  "module": "Parason Customization",
  "name": "Short Leave Request",
